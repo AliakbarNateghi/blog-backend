@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List
 
 from pydantic import BaseModel, Field
 
@@ -23,9 +23,10 @@ class UserIn(User):
     password: str
 
 
-class Token(BaseModel):
+class TokenResponse(BaseModel):
     access_token: str
     token_type: str
+    user: User
 
 
 class TokenData(BaseModel):
@@ -39,7 +40,9 @@ class TokenIn(BaseModel):
 
 class PostBase(BaseModel):
     title: str
+    discription: Optional[str] = None
     content: str
+    tags: Optional[List[str]] = None
     created_at: Optional[datetime] = Field(
         default_factory=datetime.now, title="The time the blog post was created"
     )

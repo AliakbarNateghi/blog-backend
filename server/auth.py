@@ -1,14 +1,14 @@
 from datetime import datetime, timedelta
 from typing import Optional
 
-from fastapi import APIRouter, Depends, FastAPI, HTTPException, status
+from fastapi import APIRouter, Depends, FastAPI, HTTPException, status, Query
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from pydantic import BaseModel
 
 from .database import users_collection
-from .models import Token, TokenData, TokenIn, User, UserAuth, UserIn, UserOut
+from .models import TokenResponse, TokenData, TokenIn, User, UserAuth, UserIn, UserOut
 
 router = APIRouter()
 
@@ -83,7 +83,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
     return user
 
 
-@router.post("/token", response_model=Token)
+@router.post("/api/token", response_model=TokenResponse)
 async def login_for_access_token(form_data: TokenIn):
     user = await authenticate_user(form_data.username, form_data.password)
     if not user:
@@ -96,7 +96,7 @@ async def login_for_access_token(form_data: TokenIn):
     access_token = create_access_token(
         data={"sub": user.username}, expires_delta=access_token_expires
     )
-    return {"access_token": access_token, "token_type": "bearer"}
+    return {"access_token": access_token, "token_type": "bearer", "user": user}
 
 
 @router.get("/users/me/", response_model=User)
@@ -127,6 +127,14 @@ async def create_user(user_in: UserIn):
     }
 
 
-@router.post("/signup", response_model=UserOut)
-async def signup(user_in: UserIn):
+@router.post("/api/register", response_model=UserOut)
+async def register(user_in: UserIn):
     return await create_user(user_in)
+
+
+@router.get("/api/check-username")
+async def register(username: str = Query(None)):
+    user = await users_collection.find_one({"username": username})
+    if user:
+        return {"is_chosen": True}
+    return {"is_chosen": False}

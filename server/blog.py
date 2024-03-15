@@ -18,7 +18,7 @@ def read_main():
     return {"message": "Welcome to your post!"}
 
 
-@router.get("/posts", response_model=List[Post])
+@router.get("/api/posts", response_model=List[Post])
 async def get_posts():
     posts = await posts_collection.find().to_list(1000)
     for post in posts:
@@ -26,7 +26,7 @@ async def get_posts():
     return posts
 
 
-@router.get("/posts/{post_id}", response_model=Post)
+@router.get("/api/posts/{post_id}", response_model=Post)
 async def get_post(post_id: str):
     post = await posts_collection.find_one({"_id": ObjectId(post_id)})
     if post is None:
@@ -35,7 +35,7 @@ async def get_post(post_id: str):
     return post
 
 
-@router.post("/posts", response_model=Post)
+@router.post("/api/posts", response_model=Post)
 async def create_post(post: PostIn, user: str = Depends(get_current_user)):
     new_post = {
         "title": post.title,
@@ -54,7 +54,7 @@ async def create_post(post: PostIn, user: str = Depends(get_current_user)):
 
 
 @router.put(
-    "/posts/{post_id}", response_model=Post, dependencies=[Depends(get_current_user)]
+    "/api/posts/{post_id}", response_model=Post, dependencies=[Depends(get_current_user)]
 )
 async def update_post(post_id: str, post: PostIn):
     updated_post = await posts_collection.find_one_and_update(
@@ -68,7 +68,7 @@ async def update_post(post_id: str, post: PostIn):
     raise HTTPException(status_code=404, detail="Post not found")
 
 
-@router.delete("/posts/{post_id}", dependencies=[Depends(get_current_user)])
+@router.delete("/api/posts/{post_id}", dependencies=[Depends(get_current_user)])
 async def delete_post(post_id: str):
     deleted_post = await posts_collection.delete_one({"_id": ObjectId(post_id)})
     if deleted_post:
