@@ -1,11 +1,11 @@
 from typing import List, Optional
-from fastapi.middleware.cors import CORSMiddleware
+
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 
 from server import auth, blog
 
-from .models import Post
 
 app = FastAPI()
 

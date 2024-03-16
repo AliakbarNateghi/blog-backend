@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional, List
+from typing import List, Optional
 
 from pydantic import BaseModel, Field
 
@@ -40,7 +40,7 @@ class TokenIn(BaseModel):
 
 class PostBase(BaseModel):
     title: str
-    discription: Optional[str] = None
+    description: Optional[str] = None
     content: str
     tags: Optional[List[str]] = None
     created_at: Optional[datetime] = Field(
@@ -58,7 +58,9 @@ class Post(PostBase):
 
 class PostIn(BaseModel):
     title: str
+    description: Optional[str] = None
     content: str
+    tags: Optional[List[str]] = None
 
 
 class PostOut(PostBase):

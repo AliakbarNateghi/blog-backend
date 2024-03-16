@@ -3,19 +3,13 @@ from typing import List
 
 from bson import ObjectId
 from fastapi import APIRouter, Depends, HTTPException
-from motor.motor_asyncio import AsyncIOMotorClient
 from pymongo import ReturnDocument
 
 from .auth import get_current_user
 from .database import posts_collection
-from .models import Post, PostIn, User
+from .models import Post, PostIn
 
 router = APIRouter()
-
-
-@router.get("/", dependencies=[Depends(get_current_user)])
-def read_main():
-    return {"message": "Welcome to your post!"}
 
 
 @router.get("/api/posts", response_model=List[Post])
@@ -39,7 +33,9 @@ async def get_post(post_id: str):
 async def create_post(post: PostIn, user: str = Depends(get_current_user)):
     new_post = {
         "title": post.title,
+        "description": post.description,
         "content": post.content,
+        "tags": post.tags,
         "author": {
             "username": user.username,
             "email": user.email,
@@ -53,10 +49,22 @@ async def create_post(post: PostIn, user: str = Depends(get_current_user)):
     return new_post
 
 
-@router.put(
-    "/api/posts/{post_id}", response_model=Post, dependencies=[Depends(get_current_user)]
-)
-async def update_post(post_id: str, post: PostIn):
+async def get_post_and_check_author(post_id: str, username: str):
+    post = await posts_collection.find_one({"_id": ObjectId(post_id)})
+    if not post:
+        raise HTTPException(status_code=404, detail="Post not found")
+    if post["author"]["username"] != username:
+        raise HTTPException(
+            status_code=403, detail="Don't have access to perform this action"
+        )
+    return post
+
+
+@router.put("/api/posts/{post_id}", response_model=Post)
+async def update_post(
+    post_id: str, post: PostIn, user: str = Depends(get_current_user)
+):
+    await get_post_and_check_author(post_id, user.username)
     updated_post = await posts_collection.find_one_and_update(
         {"_id": ObjectId(post_id)},
         {"$set": {**post.dict(), "updated_at": datetime.now()}},
@@ -68,8 +76,9 @@ async def update_post(post_id: str, post: PostIn):
     raise HTTPException(status_code=404, detail="Post not found")
 
 
-@router.delete("/api/posts/{post_id}", dependencies=[Depends(get_current_user)])
-async def delete_post(post_id: str):
+@router.delete("/api/posts/{post_id}")
+async def delete_post(post_id: str, user: str = Depends(get_current_user)):
+    await get_post_and_check_author(post_id, user.username)
     deleted_post = await posts_collection.delete_one({"_id": ObjectId(post_id)})
     if deleted_post:
         return {"message": "Post has been deleted successfully."}
